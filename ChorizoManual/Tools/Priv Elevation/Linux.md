@@ -1,3 +1,7 @@
+USE LINPEAS!!!!!!!!!!!!!!!
+
+////////////////////////////////////////////////////////////////////////////
+
 ~Check what command you are able to run as sudo 
 
 $ sudo -l 

@@ -1,4 +1,0 @@
-
-threader3000
-dirsearch
-terminator

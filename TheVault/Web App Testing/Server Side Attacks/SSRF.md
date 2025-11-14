@@ -40,4 +40,9 @@ adminpw=admin
 gopher://dateserver.htb:80/_POST%20/admin.php%20HTTP%2F1.1%0D%0AHost:%20dateserver.htb%0D%0AContent-Length:%2013%0D%0AContent-Type:%20application/x-www-form-urlencoded%0D%0A%0D%0Aadminpw%3Dadmin
 ```
 
-3) Then because the gopher payload is being used within an http payload, it will have to be url encoded one more time then can be used as a payload like dateserver=<payload>
+3) Then because the gopher payload is being used within an http payload, it will have to be url encoded one more time then can be used as a payload like dateserver=<payload>.
+
+## SSRF Bypasses
+
+ - Use an alternative IP representation of 127.0.0.1, such as 2130706433, 017700000001, or 127.1.
+- Register your own domain name that resolves to 127.0.0.1. You can use spoofed.burpcollaborator.net for this purpose.

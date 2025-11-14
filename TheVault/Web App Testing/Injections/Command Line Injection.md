@@ -1,3 +1,12 @@
+#### Checking for OS Escapes
+```txt
+& echo test &
+| whoami
+
+```
+
+
+
 ##### Bypassing Character Filters
 ```CLI
 {ls,-la}   #brackets add spaces and wrap brackets

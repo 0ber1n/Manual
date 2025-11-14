@@ -21,7 +21,7 @@ AddType application/x-httpd-php .l33t
 
 web.config file manipulation:
 1. Upload `exploit.json` containing your ASPX/PHP payload.
-2. Upload the above `web.config` to the same folder.
+2. Upload the below `web.config` to the same folder.
 3. Access `http://victim/uploads/exploit.json` → IIS treats it as executable.
 **Tip:** Put `web.config` at the root of your upload directory.
 
